@@ -49,70 +49,82 @@ class ProductController extends Controller
         return view('layouts.Product.create', ['companies' => $companies]);
     }
 
-
+    public function show($id)
+    {
+        $product = Product::findOrFail($id);
+        return view('layouts.Product.show', compact('product'));
+    }
+    
     public function store(Request $request) {
-        $request->validate([
-        'product_name' => 'required|string|max:255',
-        'company_id' => 'required|exists:companies,id',
-        'price' => 'required|numeric',
-        'stock' => 'required|numeric',
-        'comment' => 'nullable|string',
-        'image' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048', 
-        ]);
-
-        $imagePath = null;
-        if ($request->hasFile('image')) {
-            $imagePath = $request->file('image')->store('uploads/products', 'public');
-        } else {
+        try {
+            $request->validate([
+                'product_name' => 'required|string|max:255',
+                'company_id' => 'required|exists:companies,id',
+                'price' => 'required|numeric',
+                'stock' => 'required|numeric',
+                'comment' => 'nullable|string',
+                'image' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048', 
+            ]);
+    
             $imagePath = null;
+            if ($request->hasFile('image')) {
+                $imagePath = $request->file('image')->store('uploads/products', 'public');
+            }
+    
+            Product::create([
+                'product_name' => $request->product_name,
+                'company_id' => $request->company_id,
+                'price' => $request->price,
+                'stock' => $request->stock,
+                'comment' => $request->comment,
+                'image' => $imagePath,
+            ]);
+            
+            return redirect()->route('products.index')->with('success', '商品が新規登録されました');
+        } catch (\Exception $e) {
+            return back()->withInput()->withErrors(['error' => $e->getMessage()]);
         }
-
-        $companyId = $request->company_id;
-
-        Product::create([
-            'product_name' => $request->product_name,
-            'company_id' => $request->company_id,
-            'price' => $request->price,
-            'stock' => $request->stock,
-            'comment' => $request->comment,
-            'image' => $imagePath,
-        ]);
-        
-
-        return redirect()->route('products.index')->with('success', '商品が新規登録されました');
-
-        
     }
 
     public function destroy($id) {
-        $product = Product::findOrFail($id);
-        $product->delete();
-    
-        return redirect()->route('products.index')->with('success', '商品が削除されました');
+        try {
+            $product = Product::findOrFail($id);
+            $product->delete();
+            return redirect()->route('products.index')->with('success', '商品が削除されました');
+        } catch (\Exception $e) {
+            return back()->withErrors(['error' => $e->getMessage()]);
+        }
     }
     
-    public function show($id)
-    {
-        $product = Product::with('company')->findOrFail($id);
-        return view('layouts.Product.show', compact('product'));
+    public function update(Request $request, $id) {
+        try {
+            $product = Product::findOrFail($id);
+            $request->validate([
+                'product_name' => 'required|string|max:255',
+                'company_id' => 'required|exists:companies,id',
+                'price' => 'required|numeric',
+                'stock' => 'required|numeric',
+                'comment' => 'nullable|string',
+                'image' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048', 
+            ]);
+    
+            $imagePath = null;
+            if ($request->hasFile('image')) {
+                $imagePath = $request->file('image')->store('uploads/products', 'public');
+            }
+    
+            $product->update([
+                'product_name' => $request->product_name,
+                'company_id' => $request->company_id,
+                'price' => $request->price,
+                'stock' => $request->stock,
+                'comment' => $request->comment,
+                'image' => $imagePath,
+            ]);
+            
+            return redirect()->route('products.show', $product->id)->with('success', '商品情報が更新されました');
+        } catch (\Exception $e) {
+            return back()->withInput()->withErrors(['error' => $e->getMessage()]);
+        }
     }
-
-    public function edit($id)
-    {
-        $product = Product::findOrFail($id);
-        $companies = Company::all();
-        return view('layouts.Product.edit', compact('product', 'companies'));
-    }
-
-    public function update(Request $request, $id)
-{
-    $product = Product::findOrFail($id);
-   
-
-  
-    $product->update($request->all());
-
-
-    return redirect()->route('product.show', $product->id)->with('success', '商品情報が更新されました');
-}
     }
