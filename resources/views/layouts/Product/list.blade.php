@@ -15,11 +15,21 @@
         <option value="{{ $company->id }}" @if($companyId == $company->id) selected @endif>{{ $company->company_name }}</option>
     @endforeach
     </select>
+
+    <br>
+    <label>価格範囲:</label>
+    <input type="number" name="price_min" placeholder="最低価格"> 〜
+    <input type="number" name="price_max" placeholder="最高価格">
+    <br>
+    <label>在庫数範囲:</label>
+    <input type="number" name="stock_min" placeholder="最低在庫数"> 〜
+    <input type="number" name="stock_max" placeholder="最高在庫数">
+    <br>
     <button type="submit">検索</button>
 </form>
 
     <div class="products mt-5">
-        <table class="table table-striped">
+        <table id="product-table" class="table table-striped tablesorter">
             <thead>
                 <tr>
                     <th>ID</th>
@@ -51,8 +61,7 @@
                         <form action="{{ route('products.delete', $product->id) }}" method="POST">
                             @csrf
                             @method('DELETE')
-                            <button type="submit" class="btn btn-danger btn-sm mx-1">削除</button>
-                        </form>
+                            <button type="button" class="btn btn-danger btn-sm mx-1 delete-btn" data-product-id="{{ $product->id }}">削除</button>                        </form>
                     </td>
                 </tr>
             @endforeach
@@ -62,4 +71,48 @@
 
     
 </div>
+
+<script>
+$(document).ready(function() {
+    $("#product-table").tablesorter({
+        sortList: [[0, 1]] 
+    });
+    
+    $(document).on('click', '.delete-btn', function() {
+        console.log('削除ボタンがクリックされました'); 
+
+    var deleteConfirm = confirm('削除してよろしいでしょうか？');
+
+    if(deleteConfirm == true) {
+      var clickEle = $(this);
+     var productID = clickEle.data('product-id');
+     console.log('削除する商品ID:', productID); 
+
+      $.ajax({
+        url: '/product/' + productID,
+        type: 'POST',
+        data: {
+          'id': productID,
+          '_method': 'DELETE',
+          '_token': $('meta[name="csrf-token"]').attr('content')
+        }
+      })
+      .done(function() {
+        console.log('削除リクエストが成功しました'); 
+        clickEle.parents('tr').remove();
+        $("#product-table").trigger("update");
+      })
+      .fail(function() {
+        console.log('削除リクエストが失敗しました'); 
+        alert('エラー');
+      });
+    } else {
+      (function(e) {
+        e.preventDefault();
+      });
+    }
+ });
+});
+
+</script>
 @endsection

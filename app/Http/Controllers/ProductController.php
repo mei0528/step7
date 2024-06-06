@@ -18,8 +18,13 @@ class ProductController extends Controller
     // 検索フォームからの入力を取得
     $keyword = $request->input('keyword');
     $companyId = $request->input('company_id');
+    $priceMin = $request->input('price_min');
+    $priceMax = $request->input('price_max');
+    $stockMin = $request->input('stock_min');
+    $stockMax = $request->input('stock_max');
+    $sortColumn = $request->input('sort_column', 'id');
+    $sortDirection = $request->input('sort_direction', 'desc');
 
-    // デフォルトは全商品を取得
     $query = Product::query();
     $query->with('company');
 
@@ -35,7 +40,22 @@ class ProductController extends Controller
         });
     }
 
-    // 検索結果を取得
+    if ($priceMin) {
+        $query->where('price', '>=', $priceMin);
+    }
+
+    if ($priceMax) {
+        $query->where('price', '<=', $priceMax);
+    }
+
+    if ($stockMin) {
+        $query->where('stock', '>=', $stockMin);
+    }
+
+    if ($stockMax) {
+        $query->where('stock', '<=', $stockMax);
+    }
+    
     $products = $query->get();
         return view('layouts.Product.list', ['products' => $products, 'companies' => $companies,'companyId' => $companyId]);
     }
@@ -54,6 +74,8 @@ class ProductController extends Controller
         $product = Product::findOrFail($id);
         return view('layouts.Product.show', compact('product'));
     }
+
+
     
     public function store(Request $request) {
         try {
@@ -86,7 +108,7 @@ class ProductController extends Controller
         }
     }
 
-    public function destroy($id) {
+    public function destroy(Request $request, $id) {
         try {
             $product = Product::findOrFail($id);
             $product->delete();
@@ -96,6 +118,13 @@ class ProductController extends Controller
         }
     }
     
+    public function edit($id)
+    {
+        $product = Product::findOrFail($id);
+        $companies = Company::all();
+        return view('layouts.Product.edit', compact('product', 'companies'));
+    }
+
     public function update(Request $request, $id) {
         try {
             $product = Product::findOrFail($id);
@@ -113,6 +142,7 @@ class ProductController extends Controller
                 $imagePath = $request->file('image')->store('uploads/products', 'public');
             }
     
+            
             $product->update([
                 'product_name' => $request->product_name,
                 'company_id' => $request->company_id,
