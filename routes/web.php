@@ -29,6 +29,4 @@ Route::delete('/products/{id}', [ProductController::class, 'destroy'])->name('pr
 Route::get('/products/{id}', [ProductController::class, 'show'])->name('product.show');
 Route::get('/products/{id}/edit', [ProductController::class, 'edit'])->name('products.edit');
 Route::put('/products/{id}', [ProductController::class, 'update'])->name('products.update');
-Route::get('/products/search', [ProductController::class, 'search'])->name('products.search');
 Route::resource('/products', ProductController::class);
-Route::post('/purchase', [PurchaseController::class, 'purchase']);

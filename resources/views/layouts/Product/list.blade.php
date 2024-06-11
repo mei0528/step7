@@ -75,44 +75,79 @@
 <script>
 $(document).ready(function() {
     $("#product-table").tablesorter({
-        sortList: [[0, 1]] 
+        sortList: [[0, 1]]
     });
-    
+
+    $('#search-button').on('click', function() {
+        var formData = $('#search-form').serialize();
+
+        $.ajax({
+            url: '{{ route("products.search") }}',
+            type: 'GET',
+            data: formData,
+            success: function(data) {
+                var productTable = $('#product-list');
+                productTable.empty();
+
+                $.each(data, function(index, product) {
+                    var row = '<tr>' +
+                        '<td>' + product.id + '</td>' +
+                        '<td><img src="' + product.img_path + '" alt="商品画像" width="100"></td>' +
+                        '<td>' + product.product_name + '</td>' +
+                        '<td>' + product.price + '</td>' +
+                        '<td>' + product.stock + '</td>' +
+                        '<td>' + (product.company ? product.company.company_name : 'No Company') + '</td>' +
+                        '<td>' + product.comment + '</td>' +
+                        '<td>' +
+                        '<a href="/product/' + product.id + '" class="btn btn-primary btn-sm mx-1">詳細</a>' +
+                        '<form action="/products/' + product.id + '" method="POST" style="display:inline">' +
+                        '@csrf' +
+                        '@method("DELETE")' +
+                        '<button type="button" class="btn btn-danger btn-sm mx-1 delete-btn" data-product-id="' + product.id + '">削除</button>' +
+                        '</form>' +
+                        '</td>' +
+                        '</tr>';
+
+                    productTable.append(row);
+                });
+
+                $("#product-table").trigger("update");
+            },
+            error: function() {
+                alert('検索に失敗しました');
+            }
+        });
+    });
+
     $(document).on('click', '.delete-btn', function() {
-        console.log('削除ボタンがクリックされました'); 
+        var deleteConfirm = confirm('削除してよろしいでしょうか？');
 
-    var deleteConfirm = confirm('削除してよろしいでしょうか？');
+        if(deleteConfirm == true) {
+            var clickEle = $(this);
+            var productID = clickEle.data('product-id');
 
-    if(deleteConfirm == true) {
-      var clickEle = $(this);
-     var productID = clickEle.data('product-id');
-     console.log('削除する商品ID:', productID); 
-
-      $.ajax({
-        url: '/product/' + productID,
-        type: 'POST',
-        data: {
-          'id': productID,
-          '_method': 'DELETE',
-          '_token': $('meta[name="csrf-token"]').attr('content')
+            $.ajax({
+                url: '/products/' + productID,
+                type: 'POST',
+                data: {
+                    'id': productID,
+                    '_method': 'DELETE',
+                    '_token': $('meta[name="csrf-token"]').attr('content')
+                }
+            })
+            .done(function() {
+                clickEle.parents('tr').remove();
+                $("#product-table").trigger("update");
+            })
+            .fail(function() {
+                alert('エラー');
+            });
+        } else {
+            (function(e) {
+                e.preventDefault();
+            });
         }
-      })
-      .done(function() {
-        console.log('削除リクエストが成功しました'); 
-        clickEle.parents('tr').remove();
-        $("#product-table").trigger("update");
-      })
-      .fail(function() {
-        console.log('削除リクエストが失敗しました'); 
-        alert('エラー');
-      });
-    } else {
-      (function(e) {
-        e.preventDefault();
-      });
-    }
- });
+    });
 });
-
 </script>
 @endsection
