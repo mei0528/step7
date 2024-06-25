@@ -73,78 +73,93 @@
 </div>
 
 <script>
-    $(document).ready(function() {
-        $("#product-table").tablesorter({
-            sortList: [[0, 1]]
-        });
+$(document).ready(function() {
+    $("#product-table").tablesorter({
+        sortList: [[0, 1]] 
+    });
 
-        $(document).on('click', '.delete-btn', function() {
-            var deleteConfirm = confirm('削除してよろしいでしょうか？');
+    $(document).on('click', '.delete-btn', function() {
+        console.log('削除ボタンがクリックされました'); 
 
-            if(deleteConfirm) {
-                var clickEle = $(this);
-                var productID = clickEle.data('product-id');
+        var deleteConfirm = confirm('削除してよろしいでしょうか？');
 
-                $.ajax({
-                    url: '/products/' + productID,
-                    type: 'POST',
-                    data: {
-                        'id': productID,
-                        '_method': 'DELETE',
-                        '_token': $('meta[name="csrf-token"]').attr('content')
-                    }
-                })
-                .done(function() {
-                    clickEle.parents('tr').remove();
-                    $("#product-table").trigger("update");
-                })
-                .fail(function() {
-                    alert('エラー');
-                });
-            }
-        });
+        if(deleteConfirm == true) {
+            var clickEle = $(this);
+            var productID = clickEle.data('product-id');
+            console.log('削除する商品ID:', productID); 
 
-        // 検索ボタンのクリックイベント
-        $('#search-button').on('click', function(e) {
-            e.preventDefault(); 
-            var form = $('#search-form');
             $.ajax({
-                url: form.attr('action'),
-                type: form.attr('method'),
-                data: form.serialize(),
-                success: function(response) {
-                    var newTableBody = $(response).find('#product-table-body').html();
+                url: '/products/' + productID,
+                type: 'POST',
+                data: {
+                    'id': productID,
+                    '_method': 'DELETE',
+                    '_token': $('meta[name="csrf-token"]').attr('content')
+                }
+            })
+            .done(function() {
+                console.log('削除リクエストが成功しました'); 
+                clickEle.parents('tr').remove();
+                $("#product-table").trigger("update");
+            })
+            .fail(function() {
+                console.log('削除リクエストが失敗しました'); 
+                alert('エラー');
+            });
+        } else {
+            e.preventDefault();
+        }
+    });
 
-                $('#product-table-body').html
-                 response.products.forEach(function(product) {
-                    var row = '<tr>' +
-                         '<td>' + product.id + '</td>' +
-                         '<td><img src="' + product.img_path + '" alt="商品画像" width="100"></td>' +
-                         '<td>' + product.product_name + '</td>' +
-                         '<td>' + product.price + '</td>' +
-                         '<td>' + product.stock + '</td>' +
-                         '<td>' + (product.company ? product.company.company_name : 'No Company') + '</td>' +
-                         '<td>' + product.comment + '</td>' +
-                         '<td>' +
-                         '<a href="/product/' + product.id + '" class="btn btn-primary btn-sm mx-1">詳細</a>' +
-                         '<form action="/products/' + product.id + '" method="POST">' +
-                         '@csrf' +
-                         '@method('DELETE')' +
-                         '<button type="button" class="btn btn-danger btn-sm mx-1 delete-btn" data-product-id="' + product.id + '">削除</button>' +
-                         '</form>' +
-                         '</td>' +
-                         '</tr>';
+    // 検索ボタンのクリックイベント
+    $('#search-button').on('click', function(e) {
+        e.preventDefault(); // フォームのデフォルト動作を停止
+
+        var form = $('#search-form');
+        $.ajax({
+            url: form.attr('action'),
+            type: form.attr('method'),
+            data: form.serialize(),
+            success: function(response) {
+                // 検索結果の更新処理
+                console.log('検索リクエストが成功しました');
+
+                // 受け取ったデータが配列であることを確認
+                if (Array.isArray(response.products)) {
+                    var tbody = $('#product-table tbody');
+                    tbody.empty(); // 現在の検索結果をクリア
+
+                    response.products.forEach(function(product) {
+                        var row = '<tr>' +
+                            '<td>' + product.id + '</td>' +
+                            '<td><img src="' + product.img_path + '" alt="商品画像" width="100"></td>' +
+                            '<td>' + product.product_name + '</td>' +
+                            '<td>' + product.price + '</td>' +
+                            '<td>' + product.stock + '</td>' +
+                            '<td>' + (product.company ? product.company.company_name : 'No Company') + '</td>' +
+                            '<td>' +
+                            '<a href="/product/' + product.id + '" class="btn btn-primary btn-sm mx-1">詳細</a>' +
+                            '<form action="/products/' + product.id + '" method="POST">' +
+                            '@csrf' +
+                            '@method('DELETE')' +
+                            '<button type="button" class="btn btn-danger btn-sm mx-1 delete-btn" data-product-id="' + product.id + '">削除</button>' +
+                            '</form>' +
+                            '</td>' +
+                            '</tr>';
                         tbody.append(row);
                     });
 
-                    $('#product-table-body').html(newTableBody);
                     $("#product-table").trigger("update");
-                },
-                error: function(xhr) {
-                    alert('検索エラー');
+                } else {
+                    console.error('productsが配列ではありません');
                 }
-            });
+            },
+            error: function(xhr) {
+                console.log('検索リクエストが失敗しました');
+                alert('検索エラー');
+            }
         });
     });
+});
 </script>
 @endsection

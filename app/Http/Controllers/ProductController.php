@@ -12,52 +12,57 @@ class ProductController extends Controller
         $model = new Product();
         $products = $model->getList();
         $companies = Company::all();
-        $products = Product::with('company')->get();
-        $user=auth()->user();
-
-    // 検索フォームからの入力を取得
-    $keyword = $request->input('keyword');
-    $companyId = $request->input('company_id');
-    $priceMin = $request->input('price_min');
-    $priceMax = $request->input('price_max');
-    $stockMin = $request->input('stock_min');
-    $stockMax = $request->input('stock_max');
-    $sortColumn = $request->input('sort_column', 'id');
-    $sortDirection = $request->input('sort_direction', 'desc');
-
-    $query = Product::query();
-    $query->with('company');
-
-    // 商品名での検索
-    if ($keyword) {
-        $query->where('product_name', 'like', '%' . $keyword . '%');
-    }
-
-    // メーカー名での検索
-    if ($companyId) {
-        $query->whereHas('company', function ($q) use ($companyId) {
-            $q->where('id', $companyId);
-        });
-    }
-
-    if ($priceMin) {
-        $query->where('price', '>=', $priceMin);
-    }
-
-    if ($priceMax) {
-        $query->where('price', '<=', $priceMax);
-    }
-
-    if ($stockMin) {
-        $query->where('stock', '>=', $stockMin);
-    }
-
-    if ($stockMax) {
-        $query->where('stock', '<=', $stockMax);
-    }
+        $user = auth()->user();
     
-    $products = $query->get();
-        return view('layouts.Product.list', ['products' => $products, 'companies' => $companies,'companyId' => $companyId]);
+        // 検索フォームからの入力を取得
+        $keyword = $request->input('keyword');
+        $companyId = $request->input('company_id');
+        $priceMin = $request->input('price_min');
+        $priceMax = $request->input('price_max');
+        $stockMin = $request->input('stock_min');
+        $stockMax = $request->input('stock_max');
+    
+        $query = Product::query();
+        $query->with('company');
+    
+        // 商品名での検索
+        if ($keyword) {
+            $query->where('product_name', 'like', '%' . $keyword . '%');
+        }
+    
+        // メーカー名での検索
+        if ($companyId) {
+            $query->whereHas('company', function ($q) use ($companyId) {
+                $q->where('id', $companyId);
+            });
+        }
+    
+        // 価格範囲での検索
+        if ($priceMin) {
+            $query->where('price', '>=', $priceMin);
+        }
+    
+        if ($priceMax) {
+            $query->where('price', '<=', $priceMax);
+        }
+    
+        // 在庫範囲での検索
+        if ($stockMin) {
+            $query->where('stock', '>=', $stockMin);
+        }
+    
+        if ($stockMax) {
+            $query->where('stock', '<=', $stockMax);
+        }
+    
+        $products = $query->get();
+    
+        // AJAXリクエストかどうかをチェック
+        if ($request->ajax()) {
+            return response()->json(['products' => $products]);
+        }
+    
+        return view('layouts.Product.list', ['products' => $products, 'companies' => $companies, 'companyId' => $companyId]);
     }
 
     public function showRegistForm() {
